@@ -25,20 +25,25 @@ func (g *Ga) Init() {
 // 交叉
 func (g *Ga) Crossover() {
 	g.NewPop = im.DeepCopyPop(g.Pop)
+	rand.Shuffle(len(g.NewPop), func(i, j int) {
+		g.NewPop[i], g.NewPop[j] = g.NewPop[j], g.NewPop[i]
+	})
 	for i := 0; i < im.PopSize; i += 2 {
-		doCrossover(&g.NewPop[i], &g.NewPop[i+1])
-		g.wg.Add(2)
-		go im.EvaluteSeed(&g.NewPop[i], &g.wg)
-		go im.EvaluteSeed(&g.NewPop[i+1], &g.wg)
+		if rand.Float32() < im.PC {
+			g.doCrossover(&g.NewPop[i], &g.NewPop[i+1])
+			g.wg.Add(2)
+			go im.EvaluteSeedSync(&g.NewPop[i], &g.wg)
+			go im.EvaluteSeedSync(&g.NewPop[i+1], &g.wg)
+		}
 	}
 	g.wg.Wait()
 }
 
 // 均匀交叉
-func doCrossover(ind1, ind2 *im.Seed) {
+func (g *Ga) doCrossover(seed1, seed2 *im.Seed) {
 	for i := 0; i < im.SeedSize; i++ {
-		if rand.Float32() < im.PC {
-			ind1.Nodes[i], ind2.Nodes[i] = ind2.Nodes[i], ind1.Nodes[i]
+		if rand.Float32() < 0.5 {
+			seed1.Nodes[i], seed2.Nodes[i] = seed2.Nodes[i], seed1.Nodes[i]
 		}
 	}
 }
@@ -48,16 +53,16 @@ func (g *Ga) Mutate() {
 	for i := range g.NewPop {
 		g.wg.Add(1)
 		g.doMutate(&g.NewPop[i])
-		go im.EvaluteSeed(&g.NewPop[i], &g.wg)
+		go im.EvaluteSeedSync(&g.NewPop[i], &g.wg)
 	}
 	g.wg.Wait()
 }
 
 // 单点变异
-func (g *Ga) doMutate(ind *im.Seed) {
-	for i := range ind.Nodes {
+func (g *Ga) doMutate(seed *im.Seed) {
+	for i := range seed.Nodes {
 		if rand.Float32() < im.PM {
-			ind.Nodes[i] = rand.Intn(im.NetworkSize)
+			seed.Nodes[i] = rand.Intn(im.NetworkSize)
 		}
 	}
 }
@@ -65,9 +70,8 @@ func (g *Ga) doMutate(ind *im.Seed) {
 func (g *Ga) Select() {
 	mergerdPop := im.DeepCopyPop(g.Pop)
 	mergerdPop = append(mergerdPop, im.DeepCopyPop(g.NewPop)...)
-	sort.Sort(im.ByFit(mergerdPop))
 
-	g.Pop = im.RouletteSelection(mergerdPop, im.PopSize)
+	g.Pop = im.RouletteSelection(mergerdPop)
 	sort.Sort(im.ByFit(g.Pop))
 }
 
@@ -94,7 +98,7 @@ func (g *Ga) ExportNewPop() {
 }
 
 func (g *Ga) ExportEvolutionInfo(gen int) {
-	fmt.Printf("gen-%d: [ ", gen)
+	fmt.Printf("gen--%d: [ ", gen)
 	for idx, elem := range g.Pop {
 		fmt.Printf("%d:%+v ", idx, elem.Fit)
 	}
