@@ -36,7 +36,7 @@ func CompareAndSwap(seed *im.Seed, idx int) {
 	var mu sync.Mutex
 
 	//用nodes中的节点替换seed.Nodes[idx],并评估适应度
-	seedsMap := make(map[*im.Seed]float32)
+	seedsMap := make(map[*im.Seed]float64)
 	for node := range nodes {
 		seedCopy := im.DeepCopySeed(*seed)
 		seedCopy.Nodes[idx] = node

@@ -25,8 +25,8 @@ func DeepCopyPop(src []Seed) []Seed {
 
 // 轮盘赌选择
 func RouletteSelection(src []Seed) []Seed {
-	sort.Sort(ByFit(src))
-	totalFit := float32(0)
+	sort.Sort(BySeed(src))
+	totalFit := float64(0)
 	for _, seed := range src {
 		totalFit += seed.Fit
 	}
@@ -37,8 +37,8 @@ func RouletteSelection(src []Seed) []Seed {
 
 	rand.Shuffle(len(src), func(i, j int) { src[i], src[j] = src[j], src[i] })
 	for i := 1; i < PopSize; i++ {
-		randomNumber := rand.Float32() * totalFit
-		accumulatedFit := float32(0)
+		randomNumber := rand.Float64() * totalFit
+		accumulatedFit := float64(0)
 		for _, seed := range src {
 			accumulatedFit += seed.Fit
 			if accumulatedFit >= randomNumber && !selectedSeed[&seed] {
@@ -54,8 +54,8 @@ func RouletteSelection(src []Seed) []Seed {
 // 选择node在网络G中2-hop领域的相邻节点
 func Get2HopNodes(node int) map[int]struct{} {
 	set := make(map[int]struct{})
-	for adj1 := range G[node] { //选择node的1-hop领域
-		for adj2 := range G[adj1] { //选择node的2-hop领域
+	for adj1 := range AdjList[node] { //选择node的1-hop领域
+		for adj2 := range AdjList[adj1] { //选择node的2-hop领域
 			set[adj2] = struct{}{}
 		}
 	}

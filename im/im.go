@@ -7,24 +7,24 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"time"
 )
 
 type Seed struct {
 	Nodes []int
-	Fit   float32
+	Fit   float64
 }
 
 var (
-	Network     [][]int
-	G           [][]int
+	AdjMatrix   [][]int //邻接矩阵
+	AdjList     [][]int //邻接表
 	NetworkSize int
 )
 
+// 加载顺序不可改变!
 func Init(path string) {
 	LoadNetwork(path)
-	LoadGraph(Network)
-	NetworkSize = len(Network)
+	NetworkSize = len(AdjMatrix)
+	LoadGraph(AdjMatrix)
 }
 
 // 读取数据文件
@@ -37,15 +37,15 @@ func LoadNetwork(path string) {
 
 	scanner := bufio.NewScanner(f)
 	scanner.Split(bufio.ScanBytes)
-	Network = [][]int{}
+	AdjMatrix = [][]int{}
 	row := 0
 	for scanner.Scan() {
 		if str := scanner.Text(); str != "\n" {
-			if len(Network) == row {
-				Network = append(Network, []int{})
+			if len(AdjMatrix) == row {
+				AdjMatrix = append(AdjMatrix, []int{})
 			}
 			b, _ := strconv.ParseInt(str, 10, 64) // b={0, 1}
-			Network[row] = append(Network[row], int(b))
+			AdjMatrix[row] = append(AdjMatrix[row], int(b))
 		} else {
 			row++
 		}
@@ -56,11 +56,11 @@ func LoadNetwork(path string) {
 }
 
 func LoadGraph(network [][]int) {
-	G = make([][]int, len(network))
-	for row := 0; row < len(network); row++ {
+	AdjList = make([][]int, NetworkSize)
+	for row := 0; row < NetworkSize; row++ {
 		for col := 0; col < len(network[row]); col++ {
 			if network[row][col] == 1 {
-				G[row] = append(G[row], col)
+				AdjList[row] = append(AdjList[row], col)
 			}
 		}
 	}
@@ -75,32 +75,21 @@ func NewSeed() *Seed {
 }
 
 func EvaluteSeedSync(seed *Seed, wg *sync.WaitGroup) {
-	// TODO
 	defer wg.Done()
-	fit := 0
-	for _, node := range seed.Nodes {
-		fit += node
-	}
-	seed.Fit = float32(fit)
-	time.Sleep(30 * time.Millisecond)
+	seed.Fit = CalRobustInfluence(seed.Nodes)
 }
 
 // 评估种子适应度，并保存在map[seed]fit中。异步计算
-func EvaluteSeedAsync(seed *Seed, seedMap map[*Seed]float32, wg *sync.WaitGroup, mu *sync.Mutex) {
+func EvaluteSeedAsync(seed *Seed, seedMap map[*Seed]float64, wg *sync.WaitGroup, mu *sync.Mutex) {
 	defer wg.Done()
-	// TODO
-	fit := 0
-	for _, node := range seed.Nodes {
-		fit += node
-	}
+	fit := CalRobustInfluence(seed.Nodes)
 	mu.Lock()
-	seedMap[seed] = float32(fit)
+	seedMap[seed] = fit
 	mu.Unlock()
-	time.Sleep(30 * time.Millisecond)
 }
 
-type ByFit []Seed
+type BySeed []Seed
 
-func (s ByFit) Len() int           { return len(s) }
-func (s ByFit) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s ByFit) Less(i, j int) bool { return s[i].Fit > s[j].Fit } // 逆序
+func (s BySeed) Len() int           { return len(s) }
+func (s BySeed) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s BySeed) Less(i, j int) bool { return s[i].Fit > s[j].Fit } // 逆序

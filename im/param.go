@@ -1,9 +1,10 @@
 package im
 
-// parameter for IM
+// parameters for IM
 const (
-	SeedSize    = 10
-	PopSize     = 10
+	SeedSize       = 10
+	PopSize        = 10
+	ActivationProb = 0.01
 )
 
 // parameters for algorithm
@@ -12,4 +13,11 @@ const (
 	PM     = 0.5
 	PL     = 0.1
 	MaxGen = 100
+)
+
+// parameters for cascading failure
+const (
+	Alpha         = 0.5
+	Beta          = 1.9
+	NodeAttackPer = 0.1
 )

@@ -72,7 +72,7 @@ func (g *Ga) Select() {
 	mergerdPop = append(mergerdPop, im.DeepCopyPop(g.NewPop)...)
 
 	g.Pop = im.RouletteSelection(mergerdPop)
-	sort.Sort(im.ByFit(g.Pop))
+	sort.Sort(im.BySeed(g.Pop))
 }
 
 func (g *Ga) FindSeed() {
@@ -100,7 +100,7 @@ func (g *Ga) ExportNewPop() {
 func (g *Ga) ExportEvolutionInfo(gen int) {
 	fmt.Printf("gen--%d: [ ", gen)
 	for idx, elem := range g.Pop {
-		fmt.Printf("%d:%+v ", idx, elem.Fit)
+		fmt.Printf("%d:%.3f ", idx, elem.Fit)
 	}
 	fmt.Printf("]\n")
 }
